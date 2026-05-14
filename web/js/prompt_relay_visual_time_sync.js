@@ -254,10 +254,19 @@ class TimelineEditor {
     return `${s.toFixed(2).replace(/\.?0+$/, "")}s`;
   }
 
+  formatDurationSeconds(frames) {
+    const s = frames / this.getFps();
+    return `${s.toFixed(2).replace(/\.?0+$/, "")}s`;
+  }
+
   // Length-suffix shown on each block. Frames mode adds an "f" suffix here (not in the
   // ruler) so block labels read as a duration, not a frame index.
   formatLength(frames) {
-    return this.isSecondsMode() ? this.formatTime(frames) : `${frames}f`;
+    const frameLabel = `${frames}f`;
+    const secondLabel = this.formatDurationSeconds(frames);
+    return this.isSecondsMode()
+      ? `${secondLabel} / ${frameLabel}`
+      : `${frameLabel} / ${secondLabel}`;
   }
 
   buildDOM() {
