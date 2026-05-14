@@ -1,8 +1,45 @@
-# ComfyUI LTXV Prompt Relay Auto Sync
+# ComfyUI LTXV Prompt Relay Visual Time Sync
 
-Custom node package for 4-segment LTXV workflows using kijai/ComfyUI-PromptRelay.
+Custom nodes for LTXV workflows that need Prompt Relay, safe frame math, and guide-image
+timing outputs.
 
-## Install with ComfyUI Manager
+## Main Node
+
+Use:
+
+- `Prompt Relay Visual Time Sync`
+
+This node is based on `PromptRelayEncodeTimeline` from
+`kijai/ComfyUI-PromptRelay` and keeps the same visual timeline workflow:
+
+- colored timeline blocks
+- Add / Equalize / Delete
+- draggable segment boundaries
+- segment reorder by drag
+- prompt editing per block
+- frame/seconds ruler
+- `fps`, `time_units`, `epsilon`, `relay_options`
+- original `model` and `positive` Prompt Relay outputs
+
+It adds LTXV time sync:
+
+```text
+total_frames = ceil(length_seconds * fps / safe_divisor) * safe_divisor + 1
+```
+
+Defaults:
+
+```text
+length_seconds = 30
+fps = 24
+safe_divisor = 8
+total_frames = 721
+```
+
+When `length_seconds` or `fps` changes, the frontend updates `max_frames` and rescales the
+visual timeline while preserving the segment proportions and prompts.
+
+## Install With ComfyUI Manager
 
 Use ComfyUI Manager's install-from-Git-URL option and paste this repository URL.
 
@@ -12,76 +49,69 @@ Manager should clone it into:
 ComfyUI/custom_nodes/<this-repository-name>
 ```
 
-The repository root is already laid out as a ComfyUI custom node package:
+This repository root is already a ComfyUI custom node package:
 
 ```text
 __init__.py
 nodes.py
 ltxv_time_math.py
-README.md
+web/
 workflows/
 ```
 
-Also install the original Prompt Relay node through Manager or manually next to it:
+Also install the official Prompt Relay package:
 
 ```text
 ComfyUI/custom_nodes/ComfyUI-PromptRelay
 ```
 
-Restart ComfyUI after installation. The menu will show:
+This package does not modify or overwrite `ComfyUI-PromptRelay`. It imports/reuses the
+official Prompt Relay encoder at runtime.
 
-- `LTXV Prompt Relay Auto Sync`
-- `Safe LTXV Frame Calculator`
+## Workflows
 
-This package does not overwrite or modify `ComfyUI-PromptRelay`. It imports/reuses Prompt
-Relay at runtime and leaves the official package intact.
+Ready workflow:
 
-## Workflow
+```text
+workflows/FluxoChines1-com-ResolutionMaster-TimeMaster-VisualTimeSync.json
+```
 
-The ready workflow is in:
+Previous backend workflow kept for rollback/reference:
 
 ```text
 workflows/FluxoChines1-com-ResolutionMaster-TimeMaster-AutoPromptRelay.json
 ```
 
-## Use
+## How To Use
 
-In the final workflow, edit only:
+In the visual workflow, edit:
 
-- `ResolutionMaster - VIDEO SIZE`: width, height, horizontal/vertical ratio.
-- `FPS MASTER (auto)`.
-- `Length (seconds) MASTER`.
-- The 4 segment prompt fields inside `LTXV Prompt Relay Auto Sync`.
+- `ResolutionMaster - VIDEO SIZE`
+- `FPS MASTER (auto)`
+- `Length (seconds) MASTER`
+- the colored timeline blocks inside `Prompt Relay Visual Time Sync`
 
-Optional controls:
+You do not need to copy `181, 180, 180, 180` manually. The hidden
+`segment_lengths` and `local_prompts` fields are written by the visual timeline.
 
-- `segment_mode = weights`: use the four segment weights.
-- `segment_mode = seconds`: use the four segment seconds.
-- `segment_mode = equal`: default equal split.
+## Outputs
 
-## How sync works
+Besides the original Prompt Relay outputs:
 
-`Safe LTXV Frame Calculator` uses:
+- `model`
+- `positive`
 
-```text
-ceil(seconds * fps / 8) * 8 + 1
-```
+`Prompt Relay Visual Time Sync` returns:
 
-This keeps `(frames - 1)` divisible by 8.
+- `total_frames`
+- `segment_1_frames` through `segment_4_frames`
+- `image_1_frame_idx` through `image_4_frame_idx`
+- `segment_lengths_string`
+- `local_prompts_string`
+- `effective_duration_seconds`
+- `debug_report`
 
-`LTXV Prompt Relay Auto Sync` receives `total_frames` and builds:
-
-```text
-segment_lengths_string = "seg1, seg2, seg3, seg4"
-local_prompts_string = "prompt1 | prompt2 | prompt3 | prompt4"
-```
-
-It then calls Prompt Relay's official `_encode_relay` function. The node passes frame-space
-segment lengths to Prompt Relay and lets Prompt Relay do its own latent-space conversion.
-
-## Guide image sync
-
-The node outputs:
+Guide image starts are calculated as:
 
 ```text
 image_1_frame_idx = 0
@@ -90,32 +120,51 @@ image_3_frame_idx = segment_1_frames + segment_2_frames
 image_4_frame_idx = segment_1_frames + segment_2_frames + segment_3_frames
 ```
 
-The final workflow connects those outputs to `LTXVAddGuideMulti`, so guide images move with
-FPS and duration changes.
+If the timeline has more than 4 segments, Prompt Relay still encodes all segments. The
+specific guide-image outputs use the first 4 segments and the debug report notes that extra
+segments exist.
 
-## Why no manual segment lengths
+## Credits And Upstream
 
-The old `PromptRelayEncodeTimeline` stores `segment_lengths` in its widget data. Changing FPS
-or duration can leave those widget lengths stale. This node rebuilds the segment lengths on
-every run from `total_frames`, so there is nothing to copy manually.
+`PromptRelayVisualTimeSync` is based on `PromptRelayEncodeTimeline` from:
+
+```text
+https://github.com/kijai/ComfyUI-PromptRelay
+```
+
+Files used as implementation references:
+
+- `nodes.py`
+- `__init__.py`
+- `web/js/prompt_relay_timeline.js`
+
+The copied/adapted frontend lives only inside this package under `web/`. The official
+`ComfyUI-PromptRelay` package remains intact.
+
+At the time this package was prepared, no separate `LICENSE` file was present in the
+upstream repository. Keep upstream attribution when redistributing.
 
 ## Rollback
 
-To go back to the old timeline node:
+To use the older backend node workflow, load:
 
-1. Bypass or delete `LTXV Prompt Relay Auto Sync`.
-2. Enable `PromptRelayEncodeTimeline` in the group `OLD PROMPT RELAY TIMELINE - DISABLED`.
-3. Reconnect old timeline output `model` to `Set_model_relay`.
-4. Reconnect old timeline output `positive` to `Set_positive_relay` and `ConditioningZeroOut`.
-5. Reconnect the old manual/math segment frame controls to the `frames_seg1`, `frames_seg2`,
-   `frames_seg3`, and `frames_seg4` setters if you want manual guide timing again.
+```text
+workflows/FluxoChines1-com-ResolutionMaster-TimeMaster-AutoPromptRelay.json
+```
 
-To disable this custom node completely, remove this folder from `custom_nodes` and restart
-ComfyUI.
+To go back to the original official timeline manually:
 
-## Dependencies
+1. Disable `Prompt Relay Visual Time Sync`.
+2. Enable the disabled `PromptRelayEncodeTimeline` reference node in the workflow.
+3. Reconnect its `model` output to `Set_model_relay`.
+4. Reconnect its `positive` output to `Set_positive_relay` and `ConditioningZeroOut`.
+5. Reconnect the old manual or calculated frame controls if you want manual guide timing.
 
-- ComfyUI
-- kijai/ComfyUI-PromptRelay
-- The same LTXV, KJNodes, VideoHelperSuite, rgthree, mxToolkit and other nodes already required
-  by the supplied workflow
+## Tests
+
+Local tests:
+
+```bash
+py -B -m unittest discover -s tests -v
+```
+
