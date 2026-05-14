@@ -2,24 +2,47 @@
 
 Custom node package for 4-segment LTXV workflows using kijai/ComfyUI-PromptRelay.
 
-## Install
+## Install with ComfyUI Manager
 
-Copy this folder to:
+Use ComfyUI Manager's install-from-Git-URL option and paste this repository URL.
+
+Manager should clone it into:
 
 ```text
-ComfyUI/custom_nodes/ComfyUI-LTXV-PromptRelayAutoSync
+ComfyUI/custom_nodes/<this-repository-name>
 ```
 
-Also install the original Prompt Relay node next to it:
+The repository root is already laid out as a ComfyUI custom node package:
+
+```text
+__init__.py
+nodes.py
+ltxv_time_math.py
+README.md
+workflows/
+```
+
+Also install the original Prompt Relay node through Manager or manually next to it:
 
 ```text
 ComfyUI/custom_nodes/ComfyUI-PromptRelay
 ```
 
-Restart ComfyUI. The menu will show:
+Restart ComfyUI after installation. The menu will show:
 
 - `LTXV Prompt Relay Auto Sync`
 - `Safe LTXV Frame Calculator`
+
+This package does not overwrite or modify `ComfyUI-PromptRelay`. It imports/reuses Prompt
+Relay at runtime and leaves the official package intact.
+
+## Workflow
+
+The ready workflow is in:
+
+```text
+workflows/FluxoChines1-com-ResolutionMaster-TimeMaster-AutoPromptRelay.json
+```
 
 ## Use
 
@@ -96,4 +119,3 @@ ComfyUI.
 - kijai/ComfyUI-PromptRelay
 - The same LTXV, KJNodes, VideoHelperSuite, rgthree, mxToolkit and other nodes already required
   by the supplied workflow
-

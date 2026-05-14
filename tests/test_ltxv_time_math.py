@@ -5,7 +5,6 @@ import unittest
 
 _MATH_PATH = (
     Path(__file__).resolve().parents[1]
-    / "ComfyUI-LTXV-PromptRelayAutoSync"
     / "ltxv_time_math.py"
 )
 _SPEC = importlib.util.spec_from_file_location("ltxv_time_math_under_test", _MATH_PATH)
