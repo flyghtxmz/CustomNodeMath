@@ -99,6 +99,10 @@ class LTXVTimeMathTests(unittest.TestCase):
         self.assertEqual(starts, [0, 10, 30, 60])
         self.assertTrue(any("first 4" in warning for warning in warnings))
 
+    def test_prompt_relay_loader_rejects_non_function_encoder(self):
+        self.assertFalse(nodes_module._is_prompt_relay_encoder(object()))
+        self.assertFalse(nodes_module._is_prompt_relay_encoder(lambda: None))
+
 
 if __name__ == "__main__":
     unittest.main()

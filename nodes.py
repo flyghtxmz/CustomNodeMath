@@ -18,14 +18,12 @@ from .ltxv_time_math import (
 )
 
 
-def _find_loaded_prompt_relay_encoder() -> Callable[..., tuple[Any, Any]] | None:
-    for module in list(sys.modules.values()):
-        if module is None or not hasattr(module, "_encode_relay"):
-            continue
-        module_file = str(getattr(module, "__file__", "") or "")
-        if "PromptRelay" in module_file or hasattr(module, "PromptRelayEncode"):
-            return getattr(module, "_encode_relay")
-    return None
+def _is_prompt_relay_encoder(value: Any) -> bool:
+    return (
+        callable(value)
+        and getattr(value, "__name__", "") == "_encode_relay"
+        and "prompt" in str(getattr(value, "__module__", "")).lower()
+    )
 
 
 def _load_sibling_prompt_relay_encoder() -> Callable[..., tuple[Any, Any]]:
@@ -57,8 +55,9 @@ def _load_sibling_prompt_relay_encoder() -> Callable[..., tuple[Any, Any]]:
             spec.loader.exec_module(module)
 
         nodes_module = importlib.import_module(f"{alias}.nodes")
-        if hasattr(nodes_module, "_encode_relay"):
-            return getattr(nodes_module, "_encode_relay")
+        encoder = vars(nodes_module).get("_encode_relay")
+        if _is_prompt_relay_encoder(encoder):
+            return encoder
 
     raise RuntimeError(
         "ComfyUI-PromptRelay was not found. Install kijai/ComfyUI-PromptRelay "
@@ -67,10 +66,13 @@ def _load_sibling_prompt_relay_encoder() -> Callable[..., tuple[Any, Any]]:
 
 
 def _prompt_relay_encoder() -> Callable[..., tuple[Any, Any]]:
-    loaded = _find_loaded_prompt_relay_encoder()
-    if loaded is not None:
-        return loaded
-    return _load_sibling_prompt_relay_encoder()
+    encoder = _load_sibling_prompt_relay_encoder()
+    if not _is_prompt_relay_encoder(encoder):
+        raise RuntimeError(
+            "ComfyUI-PromptRelay _encode_relay was found but is not callable. "
+            "Check that the official kijai/ComfyUI-PromptRelay package is installed correctly."
+        )
+    return encoder
 
 
 def _parse_segment_lengths(segment_lengths: str) -> list[int]:

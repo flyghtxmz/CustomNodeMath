@@ -36,8 +36,9 @@ safe_divisor = 8
 total_frames = 721
 ```
 
-When `length_seconds` or `fps` changes, the frontend updates `max_frames` and rescales the
-visual timeline while preserving the segment proportions and prompts.
+When `length_seconds` or `fps` changes, including through linked master controls such as
+`Length (seconds) MASTER` and `FPS MASTER`, the frontend updates `max_frames` and rescales
+the visual timeline while preserving the segment proportions and prompts.
 
 ## Install With ComfyUI Manager
 
@@ -167,4 +168,3 @@ Local tests:
 ```bash
 py -B -m unittest discover -s tests -v
 ```
-

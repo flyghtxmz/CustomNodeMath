@@ -139,19 +139,69 @@ class TimelineEditor {
     return Math.max(1, parseInt(this.maxFramesWidget?.value, 10) || 1);
   }
 
+  getGraphLink(linkId) {
+    if (linkId == null || !this.node?.graph) return null;
+    const links = this.node.graph.links;
+    if (!links) return null;
+    if (typeof links.get === "function") return links.get(linkId) || null;
+    if (Array.isArray(links)) return links.find(l => l?.id === linkId || l?.[0] === linkId) || null;
+    return links[linkId] || null;
+  }
+
+  getLinkedWidgetValue(inputName) {
+    const input = this.node?.inputs?.find?.(i => i.name === inputName);
+    const link = this.getGraphLink(input?.link);
+    if (!link) return undefined;
+
+    const originId = link.origin_id != null ? link.origin_id : link[1];
+    const originSlot = link.origin_slot != null ? link.origin_slot : link[2];
+    const sourceNode =
+      this.node.graph.getNodeById?.(originId) ||
+      this.node.graph._nodes_by_id?.[originId] ||
+      this.node.graph._nodes?.find?.(n => n.id === originId);
+    if (!sourceNode) return undefined;
+
+    const outputName = sourceNode.outputs?.[originSlot]?.name;
+    const widgetCandidates = [
+      inputName,
+      outputName,
+      "value",
+      "number",
+      "float",
+      "int",
+    ].filter(Boolean).map(v => String(v).toLowerCase());
+
+    const widgets = sourceNode.widgets || [];
+    for (const candidate of widgetCandidates) {
+      const found = widgets.find(w => String(w.name || "").toLowerCase() === candidate);
+      if (found) return found.value;
+    }
+    if (widgets.length === 1) return widgets[0].value;
+    const numericWidget = widgets.find(w => Number.isFinite(parseFloat(w.value)));
+    return numericWidget?.value;
+  }
+
+  readNumericInput(inputName, widget, fallback, integer = false) {
+    const linkedValue = this.getLinkedWidgetValue(inputName);
+    const raw = linkedValue ?? widget?.value;
+    const parsed = integer ? parseInt(raw, 10) : parseFloat(raw);
+    const value = Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    if (linkedValue != null && widget && widget.value !== value) {
+      widget.value = value;
+    }
+    return value;
+  }
+
   getFps() {
-    const v = parseFloat(this.fpsWidget?.value);
-    return Number.isFinite(v) && v > 0 ? v : 24;
+    return this.readNumericInput("fps", this.fpsWidget, 24);
   }
 
   getLengthSeconds() {
-    const v = parseFloat(this.lengthSecondsWidget?.value);
-    return Number.isFinite(v) && v > 0 ? v : 30;
+    return this.readNumericInput("length_seconds", this.lengthSecondsWidget, 30);
   }
 
   getSafeDivisor() {
-    const v = parseInt(this.safeDivisorWidget?.value, 10);
-    return Number.isFinite(v) && v > 0 ? v : 8;
+    return this.readNumericInput("safe_divisor", this.safeDivisorWidget, 8, true);
   }
 
   calculatedMaxFrames() {
