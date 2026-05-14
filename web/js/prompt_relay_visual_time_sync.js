@@ -722,13 +722,31 @@ class TimelineEditor {
     for (let i = 0; i < segs.length; i++) segs[i].length = baseline[i];
     segs[idx].length = Math.max(MIN_SEGMENT_LENGTH, newLen);
     let total = segs.reduce((a, s) => a + s.length, 0);
+
     for (let i = idx + 1; i < segs.length && total > max; i++) {
       const reducible = segs[i].length - MIN_SEGMENT_LENGTH;
       const take = Math.min(reducible, total - max);
       segs[i].length -= take;
       total -= take;
     }
-    if (total > max) segs[idx].length -= (total - max);
+    for (let i = idx - 1; i >= 0 && total > max; i--) {
+      const reducible = segs[i].length - MIN_SEGMENT_LENGTH;
+      const take = Math.min(reducible, total - max);
+      segs[i].length -= take;
+      total -= take;
+    }
+    if (total > max) {
+      segs[idx].length = Math.max(MIN_SEGMENT_LENGTH, segs[idx].length - (total - max));
+      total = segs.reduce((a, s) => a + s.length, 0);
+    }
+
+    if (total < max) {
+      const receiver =
+        idx + 1 < segs.length ? idx + 1 :
+        idx - 1 >= 0 ? idx - 1 :
+        idx;
+      segs[receiver].length += (max - total);
+    }
   }
 
   rescaleTimelineToMax(maxFrames = this.getMaxFrames(), shouldCommit = true) {
