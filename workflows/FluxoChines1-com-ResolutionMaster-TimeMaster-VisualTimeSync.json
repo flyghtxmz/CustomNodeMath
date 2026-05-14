@@ -7716,6 +7716,7 @@
           "type": "FLOAT",
           "links": [
             2211,
+            2212,
             2225
           ]
         }
@@ -7768,6 +7769,7 @@
           "name": "",
           "type": "INT",
           "links": [
+            2213,
             2226
           ]
         }
@@ -8019,8 +8021,8 @@
       ],
       "flags": {},
       "order": 159,
-      "mode": 4,
-      "title": "Safe LTXV Frame Calculator (disabled - visual node calculates frames)",
+      "mode": 0,
+      "title": "Safe LTXV Frame Calculator",
       "inputs": [
         {
           "name": "length_seconds",
@@ -8028,7 +8030,7 @@
           "widget": {
             "name": "length_seconds"
           },
-          "link": null
+          "link": 2213
         },
         {
           "name": "fps",
@@ -8036,14 +8038,19 @@
           "widget": {
             "name": "fps"
           },
-          "link": null
+          "link": 2212
         }
       ],
       "outputs": [
         {
           "name": "total_frames",
           "type": "INT",
-          "links": []
+          "links": [
+            2215,
+            2216,
+            2217,
+            2218
+          ]
         },
         {
           "name": "fps_float",
@@ -8155,12 +8162,7 @@
         {
           "name": "total_frames",
           "type": "INT",
-          "links": [
-            2215,
-            2216,
-            2217,
-            2218
-          ]
+          "links": []
         },
         {
           "name": "segment_1_frames",
@@ -9259,32 +9261,32 @@
     ],
     [
       2215,
-      1196,
-      2,
+      1195,
+      0,
       1175,
       0,
       "INT"
     ],
     [
       2216,
-      1196,
-      2,
+      1195,
+      0,
       1136,
       2,
       "INT"
     ],
     [
       2217,
-      1196,
-      2,
+      1195,
+      0,
       1156,
       0,
       "INT"
     ],
     [
       2218,
-      1196,
-      2,
+      1195,
+      0,
       1151,
       0,
       "INT"
@@ -9335,6 +9337,22 @@
       0,
       1196,
       3,
+      "FLOAT"
+    ],
+    [
+      2212,
+      1189,
+      0,
+      1195,
+      1,
+      "FLOAT"
+    ],
+    [
+      2213,
+      1190,
+      0,
+      1195,
+      0,
       "FLOAT"
     ]
   ],

@@ -109,6 +109,7 @@ class TimelineEditor {
     this.segmentLengthsWidget = node.widgets.find(w => w.name === "segment_lengths");
     this.isVisualTimeSync = true;
     this._syncingMaxFrames = false;
+    this._lastTimeSignature = "";
     if (this.isVisualTimeSync) this.syncMaxFramesFromTime(false);
 
     this.timeline = parseInitial(this.timelineDataWidget?.value, this.getMaxFrames());
@@ -157,10 +158,26 @@ class TimelineEditor {
     return safeLtxvTotalFrames(this.getLengthSeconds(), this.getFps(), this.getSafeDivisor());
   }
 
+  timeSignature() {
+    return [
+      this.getLengthSeconds(),
+      this.getFps(),
+      this.getSafeDivisor(),
+    ].join("|");
+  }
+
+  syncFromExternalInputs() {
+    const signature = this.timeSignature();
+    if (signature === this._lastTimeSignature) return false;
+    this._lastTimeSignature = signature;
+    return this.syncMaxFramesFromTime(true);
+  }
+
   syncMaxFramesFromTime(rescale = true) {
     if (!this.isVisualTimeSync || !this.maxFramesWidget) return false;
     const nextMax = this.calculatedMaxFrames();
     const currentMax = this.getMaxFrames();
+    this._lastTimeSignature = this.timeSignature();
     if (nextMax === currentMax) return false;
 
     this._syncingMaxFrames = true;
@@ -1041,6 +1058,17 @@ app.registerExtension({
       this.onRemoved = function () {
         this._timelineEditor?.destroy();
         return onRemoved?.apply(this, arguments);
+      };
+
+      const onDrawForeground = this.onDrawForeground;
+      this.onDrawForeground = function (ctx) {
+        const out = onDrawForeground?.apply(this, arguments);
+        if (this._timelineEditor?.syncFromExternalInputs?.()) {
+          this._timelineEditor.commit();
+          this._timelineEditor.updateUIFromSelection();
+          this._timelineEditor.render();
+        }
+        return out;
       };
 
       const onConfigure = this.onConfigure;
